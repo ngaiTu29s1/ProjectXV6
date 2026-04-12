@@ -8,7 +8,7 @@ Xv6 gốc sử dụng `wakeup()` duyệt **toàn bộ process table O(N)** mỗi
 
 ```
 Trước (xv6 gốc):    wakeup(chan) → scan 64 process → acquire 64 locks
-Sau (optimized):     wakeup(chan) → hash → scan ~4 entries → acquire 1 lock
+Sau (optimized):     wakeup(chan) → hash → scan ~4 entries → acquire 1 bucket lock
 ```
 
 ## Kiến trúc
@@ -30,13 +30,13 @@ Sau (optimized):     wakeup(chan) → hash → scan ~4 entries → acquire 1 loc
 
 | Kỹ thuật | Nguồn | Tác dụng |
 |----------|-------|----------|
-| Hash-bucketed wait queue | `linux/wait.h` | O(k) thay O(N) |
+| Hash-bucketed wait queue (16 buckets) | `linux/wait.h` | O(k) thay O(N), k ≈ 4 |
 | `prepare_to_wait` pattern | `sched/wait.c` | Không lost wakeup |
 | `wakeup_one()` + autoremove | `__wake_up_common()` | Tránh thundering herd |
-| `wq_has_sleeper()` fast path | `fs/pipe.c` | Skip wakeup khi queue rỗng |
+| `wq_has_sleeper()` fast path | `fs/pipe.c` | Skip wakeup khi bucket rỗng |
 | Batch `copyin()` ngoài lock | `pipe_write()` | Giảm IPC latency |
 
-> 📄 Chi tiết thiết kế: [docs/design.md](docs/design.md)
+> Chi tiết thiết kế: [docs/design.md](docs/design.md)
 
 ## Files thay đổi
 
@@ -44,10 +44,11 @@ Sau (optimized):     wakeup(chan) → hash → scan ~4 entries → acquire 1 loc
 |------|----------|
 | `kernel/waitqueue.h` | **NEW** — struct definitions |
 | `kernel/waitqueue.c` | **NEW** — hash table + operations |
-| `kernel/proc.h` | Thêm `wq_entry` vào `struct proc` |
+| `kernel/proc.h` | Thêm `wq_entry` vào `struct proc`, xoá `void *chan` |
 | `kernel/proc.c` | Rewrite `sleep()`, `wakeup()`, thêm `wakeup_one()` |
 | `kernel/pipe.c` | Fast path + batch copy + `wakeup_one()` |
-| `kernel/defs.h` | Khai báo API mới |
+| `kernel/defs.h` | Khai báo: `sleep`, `wakeup`, `wakeup_one`, `wq_init` |
+| `kernel/main.c` | Gọi `wq_init()` khi boot |
 | `user/bench_ipc.c` | **NEW** — IPC latency benchmark |
 | `user/stress_wakeup.c` | **NEW** — Stress test 20+ process |
 
@@ -68,33 +69,34 @@ make CPUS=4 TOOLPREFIX=riscv64-linux-gnu- qemu
 
 ## Benchmark — Kỳ vọng lý thuyết
 
-> Số liệu thực cần đo qua QEMU. Cải thiện thực tế phụ thuộc workload.
+> **Disclaimer:** Số liệu dưới đây là **kỳ vọng lý thuyết trong điều kiện lý tưởng** (tất cả process phân bố đều vào 16 bucket). Thực tế trên QEMU single-core, cải thiện sẽ thấp hơn đáng kể vì overhead context switch vẫn chiếm phần lớn latency. Cần đo benchmark thực tế để xác nhận.
 
 | Metric | Baseline | Optimized | Kỳ vọng |
 |--------|----------|-----------|---------|
 | `wakeup()` scan | O(64) | O(4) | ~16x lý thuyết |
 | Spurious wakeups | Wake all | ≈ 0 | ~90%+ ↓ |
-| Lock contention | 64 lock acquire | 1 lock acquire | ~16x lý thuyết |
-| IPC latency | X ticks | < X ticks | Đo thực tế |
+| Context switch thừa | N process bị wake, N-1 ngủ lại | 1 process được wake | Giảm N-1 lần switch |
+| Lock contention | 64 × p->lock | 1 bucket lock + k × p->lock | ~16x lý thuyết |
+| IPC latency | X ticks | < X ticks | Cần đo thực tế |
 
 ## Sprint Plan (8 tuần · 61 pts · 20 cards)
 
 | Sprint | Tuần | Nội dung | Points |
 |--------|------|----------|--------|
-| 1 | 1–2 | Setup, đọc codebase, thiết kế struct | 10 |
+| 1 | 1–2 | Setup, đọc codebase, thiết kế struct | 11 |
 | 2 | 3–4 | Implement wait queue, rewrite sleep/wakeup | 18 |
 | 3 | 5–6 | wakeup_one, pipe optimization, benchmark | 20 |
-| 4 | 7–8 | Fix bugs, báo cáo, demo | 13 |
+| 4 | 7–8 | Fix bugs, báo cáo, demo | 12 |
 
 <details>
-<summary>📋 Danh sách 20 cards</summary>
+<summary>Danh sách 20 cards</summary>
 
 | Card | Task | Sprint | Pts |
 |------|------|--------|-----|
 | S1-1 | Clone xv6, boot QEMU | 1 | 2 |
 | S1-2 | Đọc `proc.c` — hiểu O(N) | 1 | 3 |
 | S1-3 | Đọc Linux wait queue | 1 | 2 |
-| S1-4 | Thiết kế `waitqueue.h` + lock ordering | 1 | 2 |
+| S1-4 | Thiết kế `waitqueue.h` + lock ordering | 1 | 3 |
 | S1-5 | Setup git repo + nhánh | 1 | 1 |
 | S2-1 | Implement `waitqueue.c` | 2 | 5 |
 | S2-2 | Rewrite `sleep()` | 2 | 4 |
@@ -110,7 +112,7 @@ make CPUS=4 TOOLPREFIX=riscv64-linux-gnu- qemu
 | S4-1 | Fix bugs | 4 | 3 |
 | S4-2 | Benchmark report | 4 | 3 |
 | S4-3 | Báo cáo kỹ thuật 4–6 trang | 4 | 3 |
-| S4-4 | Demo script + 2 build | 4 | 2 |
+| S4-4 | Demo script + 2 build | 4 | 3 |
 
 </details>
 
