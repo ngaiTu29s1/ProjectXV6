@@ -28,6 +28,8 @@ struct cpu {
 
 extern struct cpu cpus[NCPU];
 
+#include "waitqueue.h"
+
 // per-process data for the trap handling code in trampoline.S.
 // sits in a page by itself just under the trampoline page in the
 // user page table. not specially mapped in the kernel page table.
@@ -103,5 +105,6 @@ struct proc {
   struct context context;      // swtch() here to run process
   struct file *ofile[NOFILE];  // Open files
   struct inode *cwd;           // Current directory
+  struct wq_entry wq_entry;    // Wait queue entry used while sleeping
   char name[16];               // Process name (debugging)
 };

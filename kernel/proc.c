@@ -5,6 +5,7 @@
 #include "spinlock.h"
 #include "proc.h"
 #include "defs.h"
+#include "waitqueue.h"
 
 struct cpu cpus[NCPU];
 
@@ -51,10 +52,15 @@ procinit(void)
   
   initlock(&pid_lock, "nextpid");
   initlock(&wait_lock, "wait_lock");
+  wq_init();
   for(p = proc; p < &proc[NPROC]; p++) {
       initlock(&p->lock, "proc");
       p->state = UNUSED;
       p->kstack = KSTACK((int) (p - proc));
+      p->wq_entry.proc = p;
+      p->wq_entry.chan = 0;
+      p->wq_entry.next = 0;
+      p->wq_entry.queued = 0;
   }
 }
 
@@ -166,6 +172,9 @@ freeproc(struct proc *p)
   p->parent = 0;
   p->name[0] = 0;
   p->chan = 0;
+  p->wq_entry.chan = 0;
+  p->wq_entry.next = 0;
+  p->wq_entry.queued = 0;
   p->killed = 0;
   p->xstate = 0;
   p->state = UNUSED;
@@ -543,21 +552,18 @@ void
 sleep(void *chan, struct spinlock *lk)
 {
   struct proc *p = myproc();
-  
-  // Must acquire p->lock in order to
-  // change p->state and then call sched.
-  // Once we hold p->lock, we can be
-  // guaranteed that we won't miss any wakeup
-  // (wakeup locks p->lock),
-  // so it's okay to release lk.
+  struct wq_bucket *b = wq_bucket_for(chan);
 
+  acquire(&b->lock);
   acquire(&p->lock);  //DOC: sleeplock1
   release(lk);
 
   // Go to sleep.
+  wq_add_locked(b, chan, p);
   p->chan = chan;
   p->state = SLEEPING;
 
+  release(&b->lock);
   sched();
 
   // Tidy up.
@@ -573,17 +579,25 @@ sleep(void *chan, struct spinlock *lk)
 void
 wakeup(void *chan)
 {
-  struct proc *p;
+  struct wq_bucket *b = wq_bucket_for(chan);
+  struct wq_entry *e;
 
-  for(p = proc; p < &proc[NPROC]; p++) {
-    if(p != myproc()){
-      acquire(&p->lock);
-      if(p->state == SLEEPING && p->chan == chan) {
-        p->state = RUNNABLE;
+  acquire(&b->lock);
+  e = b->head;
+  while(e){
+    struct wq_entry *next = e->next;
+
+    if(e->chan == chan){
+      acquire(&e->proc->lock);
+      if(e->proc->state == SLEEPING && e->proc->chan == chan) {
+        e->proc->state = RUNNABLE;
+        wq_remove_locked(b, e);
       }
-      release(&p->lock);
+      release(&e->proc->lock);
     }
+    e = next;
   }
+  release(&b->lock);
 }
 
 // Kill the process with the given pid.
@@ -599,8 +613,11 @@ kkill(int pid)
     if(p->pid == pid){
       p->killed = 1;
       if(p->state == SLEEPING){
+        void *chan = p->chan;
         // Wake process from sleep().
-        p->state = RUNNABLE;
+        release(&p->lock);
+        wakeup(chan);
+        return 0;
       }
       release(&p->lock);
       return 0;
