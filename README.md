@@ -79,14 +79,17 @@ make CPUS=4 TOOLPREFIX=riscv64-linux-gnu- qemu
 | Lock contention | 64 × p->lock | 1 bucket lock + k × p->lock | ~16x lý thuyết |
 | IPC latency | X ticks | < X ticks | Cần đo thực tế |
 
-## Sprint Plan (8 tuần · 61 pts · 20 cards)
+## Sprint Plan (7 tuần · 61 pts · 20 cards)
 
 | Sprint | Tuần | Nội dung | Points |
 |--------|------|----------|--------|
-| 1 | 1–2 | Setup, đọc codebase, thiết kế struct | 11 |
-| 2 | 3–4 | Implement wait queue, rewrite sleep/wakeup | 18 |
-| 3 | 5–6 | wakeup_one, pipe optimization, benchmark | 20 |
-| 4 | 7–8 | Fix bugs, báo cáo, demo | 12 |
+| 1 | 1 | Setup, đọc codebase | 8 |
+| 2 | 2 | Thiết kế & Implement waitqueue | 8 |
+| 3 | 3 | Rewrite sleep/wakeup | 8 |
+| 4 | 4 | Benchmark cơ bản, usertests, wakeup_one | 8 |
+| 5 | 5 | Optimization (pipe), verify subsystems | 9 |
+| 6 | 6 | Benchmark so sánh, stress test | 8 |
+| 7 | 7 | Fix bugs, báo cáo, demo | 12 |
 
 <details>
 <summary>Danh sách 20 cards</summary>
@@ -96,23 +99,23 @@ make CPUS=4 TOOLPREFIX=riscv64-linux-gnu- qemu
 | S1-1 | Clone xv6, boot QEMU | 1 | 2 |
 | S1-2 | Đọc `proc.c` — hiểu O(N) | 1 | 3 |
 | S1-3 | Đọc Linux wait queue | 1 | 2 |
-| S1-4 | Thiết kế `waitqueue.h` + lock ordering | 1 | 3 |
-| S1-5 | Setup git repo + nhánh | 1 | 1 |
-| S2-1 | Implement `waitqueue.c` | 2 | 5 |
-| S2-2 | Rewrite `sleep()` | 2 | 4 |
-| S2-3 | Rewrite `wakeup()` O(k) | 2 | 4 |
-| S2-4 | Benchmark `bench_ipc.c` | 2 | 3 |
-| S2-5 | Integration test: `usertests` | 2 | 2 |
-| S3-1 | `wakeup_one()` | 3 | 3 |
-| S3-2 | Pipe fast path + batch copy | 3 | 4 |
-| S3-3 | Verify per-bucket lock | 3 | 2 |
-| S3-4 | Verify subsystem (pipe, IDE, shell) | 3 | 3 |
-| S3-5 | Benchmark so sánh trước/sau | 3 | 5 |
-| S3-6 | Stress test 20+ process | 3 | 3 |
-| S4-1 | Fix bugs | 4 | 3 |
-| S4-2 | Benchmark report | 4 | 3 |
-| S4-3 | Báo cáo kỹ thuật 4–6 trang | 4 | 3 |
-| S4-4 | Demo script + 2 build | 4 | 3 |
+| S1-4 | Setup git repo + nhánh | 1 | 1 |
+| S2-1 | Thiết kế `waitqueue.h` + lock ordering | 2 | 3 |
+| S2-2 | Implement `waitqueue.c` | 2 | 5 |
+| S3-1 | Rewrite `sleep()` | 3 | 4 |
+| S3-2 | Rewrite `wakeup()` O(k) | 3 | 4 |
+| S4-1 | Benchmark `bench_ipc.c` | 4 | 3 |
+| S4-2 | Integration test: `usertests` | 4 | 2 |
+| S4-3 | `wakeup_one()` | 4 | 3 |
+| S5-1 | Pipe fast path + batch copy | 5 | 4 |
+| S5-2 | Verify per-bucket lock | 5 | 2 |
+| S5-3 | Verify subsystem (pipe, IDE, shell) | 5 | 3 |
+| S6-1 | Benchmark so sánh trước/sau | 6 | 5 |
+| S6-2 | Stress test 20+ process | 6 | 3 |
+| S7-1 | Fix bugs | 7 | 3 |
+| S7-2 | Benchmark report | 7 | 3 |
+| S7-3 | Báo cáo kỹ thuật 4–6 trang | 7 | 3 |
+| S7-4 | Demo script + 2 build | 7 | 3 |
 
 </details>
 
