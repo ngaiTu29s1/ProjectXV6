@@ -5,7 +5,7 @@
 // Number of ping-pong round trips per test.
 // Each round = parent write → child wakes → child read → child write → parent wakes → parent read
 // = 2 sleep/wakeup pairs per round → directly exercises our optimization
-#define NROUNDS 1000
+#define NROUNDS 5000
 
 static void
 pingpong(int rounds)
