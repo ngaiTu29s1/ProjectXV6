@@ -47,8 +47,8 @@ Sau (optimized):     wakeup(chan) → hash → scan ~4 entries → acquire 1 buc
 | `kernel/proc.h` | Thêm `wq_entry` vào `struct proc` | ✅ Done |
 | `kernel/proc.c` | Rewrite `sleep()`, `wakeup()` | ✅ Done — `wakeup_one()` chưa có |
 | `kernel/pipe.c` | Fast path + batch copy + `wakeup_one()` | ⏳ TODO |
-| `kernel/defs.h` | Khai báo API mới | ⚠️ Có duplicate `wq_init`, cần fix |
-| `kernel/main.c` | Gọi `wq_init()` khi boot | ⚠️ Redundant — procinit() đã gọi |
+| `kernel/defs.h` | Khai báo API mới | ✅ Done |
+| `kernel/main.c` | Init sequence | ✅ Done |
 | `user/bench_ipc.c` | **NEW** — IPC latency benchmark | ⏳ Chưa tạo |
 | `user/stress_wakeup.c` | **NEW** — Stress test 20+ process | ⏳ Chưa tạo |
 
@@ -56,17 +56,103 @@ Sau (optimized):     wakeup(chan) → hash → scan ~4 entries → acquire 1 buc
 
 ## Build & Run
 
+### Yêu cầu
+
+- RISC-V cross-compiler: `riscv64-unknown-elf-gcc` hoặc `riscv64-linux-gnu-gcc`
+- QEMU: `qemu-system-riscv64`
+
 ```bash
-# Build & boot
-make clean
-make TOOLPREFIX=riscv64-linux-gnu- qemu
+# Kiểm tra toolchain
+which riscv64-unknown-elf-gcc || which riscv64-linux-gnu-gcc
+```
 
-# Trong xv6 shell
-$ bench_ipc           # IPC latency benchmark
-$ stress_wakeup       # Stress test
+### Build và khởi động QEMU
 
-# Multi-core test
-make CPUS=4 TOOLPREFIX=riscv64-linux-gnu- qemu
+```bash
+# Build sạch + boot (tự detect toolchain)
+make clean && make qemu
+
+# Chỉ định toolchain rõ ràng
+make TOOLPREFIX=riscv64-unknown-elf- qemu
+make TOOLPREFIX=riscv64-linux-gnu-   qemu
+
+# Multi-core (4 CPU)
+make CPUS=4 TOOLPREFIX=riscv64-unknown-elf- qemu
+
+# Debug với GDB (mở terminal thứ 2 chạy gdb)
+make TOOLPREFIX=riscv64-unknown-elf- qemu-gdb
+```
+
+Sau khi boot thành công sẽ thấy prompt:
+
+```
+xv6 kernel is booting
+$ _
+```
+
+### Thoát QEMU
+
+```
+Ctrl-A  X
+```
+
+### Trong xv6 shell — các lệnh quan trọng
+
+#### Regression tests (bắt buộc pass trước khi merge)
+
+```
+$ usertests
+```
+Chạy toàn bộ test suite (~3248 dòng). Bao gồm: fork, exec, pipe, file I/O, signals, memory.
+Kết quả mong đợi: `ALL TESTS PASSED`
+
+```
+$ usertests forktest
+$ usertests rmdot
+```
+Chạy một test cụ thể theo tên (tra cứu tên trong `user/usertests.c`).
+
+#### Stress tests
+
+```
+$ grind
+```
+Chạy ngẫu nhiên các syscall trên nhiều process đồng thời. Dùng để phát hiện race condition và deadlock.
+
+```
+$ forktest
+```
+Fork đến giới hạn process table (NPROC=64), kiểm tra cleanup.
+
+```
+$ stressfs
+```
+Stress test filesystem concurrency — nhiều process đọc/ghi file đồng thời.
+
+#### Benchmark (TODO — chưa tạo)
+
+```
+$ bench_ipc        # đo IPC latency qua pipe trước/sau optimization
+$ stress_wakeup    # stress 20+ process sleep/wakeup đồng thời
+```
+
+#### Tiện ích
+
+```
+$ ls               # liệt kê file trong thư mục hiện tại
+$ cat README       # đọc file
+$ echo hello       # in ra stdout
+$ grep pattern file
+$ wc file          # word count
+$ kill pid         # gửi signal tới process
+```
+
+### Chạy test tự động từ host (không cần vào shell)
+
+```bash
+./test-xv6.py usertests          # chạy usertests tự động
+./test-xv6.py -q usertests       # quick subset
+./test-xv6.py crash              # crash recovery test
 ```
 
 ## Benchmark — Kỳ vọng lý thuyết
