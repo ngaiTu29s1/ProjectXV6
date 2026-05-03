@@ -19,8 +19,6 @@ pingpong(int rounds)
     exit(1);
   }
 
-  t0 = uptime();
-
   pid = fork();
   if(pid < 0){
     printf("bench_ipc: fork failed\n");
@@ -41,17 +39,26 @@ pingpong(int rounds)
 
   close(p2c[0]);
   close(c2p[1]);
+
+  // Warmup: one round to ensure the child is scheduled and waiting
+  // before we start the clock, so fork/scheduling latency is excluded.
+  if(write(p2c[1], &buf, 1) != 1 || read(c2p[0], &buf, 1) != 1){
+    printf("bench_ipc: warmup failed\n");
+    exit(1);
+  }
+
+  t0 = uptime();
   for(int i = 0; i < rounds; i++){
-    write(p2c[1], &buf, 1);
+    if(write(p2c[1], &buf, 1) != 1) break;
     if(read(c2p[0], &buf, 1) != 1) break;
   }
+  t1 = uptime();
+
   close(p2c[1]);
   close(c2p[0]);
   wait(0);
 
-  t1 = uptime();
   elapsed = t1 - t0;
-
   printf("  %d rounds: %d ticks", rounds, elapsed);
   if(elapsed > 0)
     printf(" (%d rounds/tick)\n", rounds / elapsed);
