@@ -61,10 +61,5 @@ int
 wq_has_sleeper(void *chan)
 {
   struct wq_bucket *b = wq_bucket_for(chan);
-  int has;
-
-  acquire(&b->lock);
-  has = b->head != 0;
-  release(&b->lock);
-  return has;
+  return __atomic_load_n(&b->head, __ATOMIC_ACQUIRE) != 0;
 }

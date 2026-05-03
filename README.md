@@ -40,17 +40,19 @@ Sau (optimized):     wakeup(chan) → hash → scan ~4 entries → acquire 1 buc
 
 ## Files thay đổi
 
-| File | Thay đổi |
-|------|----------|
-| `kernel/waitqueue.h` | **NEW** — struct definitions |
-| `kernel/waitqueue.c` | **NEW** — hash table + operations |
-| `kernel/proc.h` | Thêm `wq_entry` vào `struct proc`, xoá `void *chan` |
-| `kernel/proc.c` | Rewrite `sleep()`, `wakeup()`, thêm `wakeup_one()` |
-| `kernel/pipe.c` | Fast path + batch copy + `wakeup_one()` |
-| `kernel/defs.h` | Khai báo: `sleep`, `wakeup`, `wakeup_one`, `wq_init` |
-| `kernel/main.c` | Gọi `wq_init()` khi boot |
-| `user/bench_ipc.c` | **NEW** — IPC latency benchmark |
-| `user/stress_wakeup.c` | **NEW** — Stress test 20+ process |
+| File | Thay đổi | Trạng thái |
+|------|----------|------------|
+| `kernel/waitqueue.h` | **NEW** — struct definitions | ✅ Done |
+| `kernel/waitqueue.c` | **NEW** — hash table + operations | ✅ Done |
+| `kernel/proc.h` | Thêm `wq_entry` vào `struct proc` | ✅ Done |
+| `kernel/proc.c` | Rewrite `sleep()`, `wakeup()` | ✅ Done — `wakeup_one()` chưa có |
+| `kernel/pipe.c` | Fast path + batch copy + `wakeup_one()` | ⏳ TODO |
+| `kernel/defs.h` | Khai báo API mới | ⚠️ Có duplicate `wq_init`, cần fix |
+| `kernel/main.c` | Gọi `wq_init()` khi boot | ⚠️ Redundant — procinit() đã gọi |
+| `user/bench_ipc.c` | **NEW** — IPC latency benchmark | ⏳ Chưa tạo |
+| `user/stress_wakeup.c` | **NEW** — Stress test 20+ process | ⏳ Chưa tạo |
+
+> Tiến độ chi tiết, bugs đang open, và quyết định thiết kế: [docs/progress.md](docs/progress.md)
 
 ## Build & Run
 
@@ -94,28 +96,28 @@ make CPUS=4 TOOLPREFIX=riscv64-linux-gnu- qemu
 <details>
 <summary>Danh sách 20 cards</summary>
 
-| Card | Task | Sprint | Pts |
-|------|------|--------|-----|
-| S1-1 | Clone xv6, boot QEMU | 1 | 2 |
-| S1-2 | Đọc `proc.c` — hiểu O(N) | 1 | 3 |
-| S1-3 | Đọc Linux wait queue | 1 | 2 |
-| S1-4 | Setup git repo + nhánh | 1 | 1 |
-| S2-1 | Thiết kế `waitqueue.h` + lock ordering | 2 | 3 |
-| S2-2 | Implement `waitqueue.c` | 2 | 5 |
-| S3-1 | Rewrite `sleep()` | 3 | 4 |
-| S3-2 | Rewrite `wakeup()` O(k) | 3 | 4 |
-| S4-1 | Benchmark `bench_ipc.c` | 4 | 3 |
-| S4-2 | Integration test: `usertests` | 4 | 2 |
-| S4-3 | `wakeup_one()` | 4 | 3 |
-| S5-1 | Pipe fast path + batch copy | 5 | 4 |
-| S5-2 | Verify per-bucket lock | 5 | 2 |
-| S5-3 | Verify subsystem (pipe, IDE, shell) | 5 | 3 |
-| S6-1 | Benchmark so sánh trước/sau | 6 | 5 |
-| S6-2 | Stress test 20+ process | 6 | 3 |
-| S7-1 | Fix bugs | 7 | 3 |
-| S7-2 | Benchmark report | 7 | 3 |
-| S7-3 | Báo cáo kỹ thuật 4–6 trang | 7 | 3 |
-| S7-4 | Demo script + 2 build | 7 | 3 |
+| Card | Task | Sprint | Pts | Trạng thái |
+|------|------|--------|-----|------------|
+| S1-1 | Clone xv6, boot QEMU | 1 | 2 | ✅ |
+| S1-2 | Đọc `proc.c` — hiểu O(N) | 1 | 3 | ✅ |
+| S1-3 | Đọc Linux wait queue | 1 | 2 | ✅ |
+| S1-4 | Setup git repo + nhánh | 1 | 1 | ✅ |
+| S2-1 | Thiết kế `waitqueue.h` + lock ordering | 2 | 3 | ✅ |
+| S2-2 | Implement `waitqueue.c` | 2 | 5 | ✅ |
+| S3-1 | Rewrite `sleep()` | 3 | 4 | ✅ |
+| S3-2 | Rewrite `wakeup()` O(k) | 3 | 4 | ✅ |
+| S4-1 | Benchmark `bench_ipc.c` | 4 | 3 | ⏳ |
+| S4-2 | Integration test: `usertests` | 4 | 2 | ⏳ |
+| S4-3 | `wakeup_one()` | 4 | 3 | ⏳ |
+| S5-1 | Pipe fast path + batch copy | 5 | 4 | ⏳ |
+| S5-2 | Verify per-bucket lock | 5 | 2 | ⏳ |
+| S5-3 | Verify subsystem (pipe, IDE, shell) | 5 | 3 | ⏳ |
+| S6-1 | Benchmark so sánh trước/sau | 6 | 5 | ⏳ |
+| S6-2 | Stress test 20+ process | 6 | 3 | ⏳ |
+| S7-1 | Fix bugs | 7 | 3 | ⏳ |
+| S7-2 | Benchmark report | 7 | 3 | ⏳ |
+| S7-3 | Báo cáo kỹ thuật 4–6 trang | 7 | 3 | ⏳ |
+| S7-4 | Demo script + 2 build | 7 | 3 | ⏳ |
 
 </details>
 
