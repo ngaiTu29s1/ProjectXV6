@@ -25,7 +25,6 @@ OBJS = \
   $K/sleeplock.o \
   $K/file.o \
   $K/pipe.o \
-  $K/waitqueue.o \
   $K/exec.o \
   $K/sysfile.o \
   $K/kernelvec.o \
@@ -147,6 +146,7 @@ UPROGS=\
 	$U/_logstress\
 	$U/_forphan\
 	$U/_dorphan\
+	$U/_bench_ipc\
 
 fs.img: mkfs/mkfs README $(UPROGS)
 	mkfs/mkfs fs.img README $(UPROGS)

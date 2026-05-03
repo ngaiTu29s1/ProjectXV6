@@ -600,6 +600,33 @@ wakeup(void *chan)
   release(&b->lock);
 }
 
+// Wake up at most one process sleeping on channel chan.
+// Caller should hold the condition lock.
+void
+wakeup_one(void *chan)
+{
+  struct wq_bucket *b = wq_bucket_for(chan);
+  struct wq_entry *e;
+
+  acquire(&b->lock);
+  e = b->head;
+  while(e){
+    struct wq_entry *next = e->next;
+    if(e->chan == chan){
+      acquire(&e->proc->lock);
+      if(e->proc->state == SLEEPING && e->proc->chan == chan){
+        e->proc->state = RUNNABLE;
+        wq_remove_locked(b, e);
+        release(&e->proc->lock);
+        break;
+      }
+      release(&e->proc->lock);
+    }
+    e = next;
+  }
+  release(&b->lock);
+}
+
 // Kill the process with the given pid.
 // The victim won't exit until it tries to return
 // to user space (see usertrap() in trap.c).
