@@ -11,12 +11,13 @@
 |--------|----------|------------|
 | Sprint 1 | Setup, đọc codebase, thiết kế struct | ✅ DONE |
 | Sprint 2 | Implement wait queue, rewrite sleep/wakeup | ⚠️ DONE (có bug) |
-| Sprint 3 | wakeup_one, pipe optimization, benchmark | 🔄 IN PROGRESS |
-| Sprint 4 | Fix bugs, báo cáo, demo | ⏳ TODO |
+| Sprint 3 | wakeup_one, benchmark, usertests | ✅ DONE |
+| Sprint 4 (tuần này) | pipe.c optimization, stress_wakeup | 🔄 IN PROGRESS |
+| Sprint 5 | Fix bugs, báo cáo, demo | ⏳ TODO |
 
 ---
 
-## ✅ Đã hoàn thành
+## ✅ Đã hoàn thành (Sprint 1–4)
 
 ### Infrastructure — `kernel/waitqueue.h` + `kernel/waitqueue.c`
 - `wq_entry` (proc, chan, next, queued), `wq_bucket` (spinlock, head), `waitqueue_table` (16 buckets)
@@ -29,6 +30,16 @@
 
 ### `struct proc` — `kernel/proc.h:108`
 - Embedded `struct wq_entry wq_entry` — không cần kalloc, 1 entry/proc
+
+### `wakeup_one()` — `kernel/proc.c:603`
+- Wake đúng 1 process trên chan, dừng sau khi tìm được (anti-thundering herd)
+- Khai báo trong `defs.h`
+- `usertests` pass 100% sau khi thêm
+
+### `user/bench_ipc.c`
+- Ping-pong benchmark: 1000 round trips qua pipe, đo ticks + rounds/tick
+- Đăng ký trong Makefile, build thành `user/_bench_ipc`
+- Chạy trong xv6 shell: `$ bench_ipc`
 
 ### `sleep()` rewrite — `kernel/proc.c:552`
 - Lock ordering: acquire bucket lock → acquire p->lock → release lk
@@ -46,31 +57,9 @@
 
 ---
 
-## 🔄 Đang làm (Sprint 3)
-
-_Chưa có item nào đang actively implement. Tiếp theo: xem phần TODO._
-
----
-
 ## ⏳ TODO
 
-### P0 — Bug fixes (phải sửa trước khi test)
-
-- [ ] **`defs.h` duplicate** — `wq_init` khai báo 2 lần (line 106 và 188), xóa 1 cái
-- [ ] **`wq_has_sleeper()` không phải fast path thật** — hiện tại acquire/release lock, phải đổi sang atomic load không cần lock:
-  ```c
-  // Thay thế bằng:
-  int wq_has_sleeper(void *chan) {
-      struct wq_bucket *b = wq_bucket_for(chan);
-      return __atomic_load_n(&b->head, __ATOMIC_ACQUIRE) != 0;
-  }
-  ```
-
 ### P1 — Core features còn thiếu
-
-- [ ] **`wakeup_one()`** — chưa implement, chưa khai báo trong `defs.h`
-  - Wake đúng 1 process trên chan, dừng ngay sau khi tìm được (anti-thundering herd)
-  - Cần: thêm vào `proc.c`, khai báo trong `defs.h`
 
 - [ ] **`pipe.c` optimization** — hiện vẫn là xv6 gốc, chưa tối ưu gì:
   - Thay `wakeup()` → `wakeup_one()` (3 chỗ: pipewrite full, pipewrite done, piperead done)
@@ -79,19 +68,14 @@ _Chưa có item nào đang actively implement. Tiếp theo: xem phần TODO._
 
 ### P2 — Benchmark & stress test
 
-- [ ] **`user/bench_ipc.c`** — đo IPC latency trước/sau optimization
-  - Pipe write/read loop, đo số ticks QEMU
-  - In ra: ticks/op, throughput
-
 - [ ] **`user/stress_wakeup.c`** — stress test 20+ process cùng sleep/wakeup
   - Verify không deadlock, không lost wakeup
-  - Verify `usertests` vẫn pass
 
-### P3 — Verification
+### P3 — Verification & report
 
-- [ ] **Chạy `usertests`** — phải pass 100% trước khi merge
 - [ ] **Chạy `grind`** — multi-process stress
-- [ ] **Benchmark so sánh** — ghi lại số liệu baseline vs optimized
+- [ ] **Benchmark so sánh** — ghi lại số liệu baseline vs optimized (chạy bench_ipc trước/sau pipe.c opt)
+- [ ] Báo cáo kỹ thuật, demo script
 
 ---
 

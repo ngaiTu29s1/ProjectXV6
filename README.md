@@ -192,9 +192,9 @@ $ kill pid         # gửi signal tới process
 | S2-2 | Implement `waitqueue.c` | 2 | 5 | ✅ |
 | S3-1 | Rewrite `sleep()` | 3 | 4 | ✅ |
 | S3-2 | Rewrite `wakeup()` O(k) | 3 | 4 | ✅ |
-| S4-1 | Benchmark `bench_ipc.c` | 4 | 3 | ⏳ |
-| S4-2 | Integration test: `usertests` | 4 | 2 | ⏳ |
-| S4-3 | `wakeup_one()` | 4 | 3 | ⏳ |
+| S4-1 | Benchmark `bench_ipc.c` | 4 | 3 | ✅ |
+| S4-2 | Integration test: `usertests` | 4 | 2 | ✅ |
+| S4-3 | `wakeup_one()` | 4 | 3 | ✅ |
 | S5-1 | Pipe fast path + batch copy | 5 | 4 | ⏳ |
 | S5-2 | Verify per-bucket lock | 5 | 2 | ⏳ |
 | S5-3 | Verify subsystem (pipe, IDE, shell) | 5 | 3 | ⏳ |
