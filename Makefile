@@ -147,6 +147,7 @@ UPROGS=\
 	$U/_forphan\
 	$U/_dorphan\
 	$U/_bench_ipc\
+	$U/_stress_wakeup\
 
 fs.img: mkfs/mkfs README $(UPROGS)
 	mkfs/mkfs fs.img README $(UPROGS)

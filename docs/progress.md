@@ -40,6 +40,12 @@
 - Ping-pong benchmark: 1000 round trips qua pipe, đo ticks + rounds/tick
 - Đăng ký trong Makefile, build thành `user/_bench_ipc`
 - Chạy trong xv6 shell: `$ bench_ipc`
+- Smoke test gần nhất: `5000 rounds: 10 ticks (500 rounds/tick)`
+
+### `user/stress_wakeup.c`
+- Stress test 20+ process cùng sleep/wakeup
+- Verify không deadlock, không lost wakeup
+- Smoke test gần nhất: `stress_wakeup: 20 children x 50 rounds` → `OK`
 
 ### `sleep()` rewrite — `kernel/proc.c:552`
 - Lock ordering: acquire bucket lock → acquire p->lock → release lk
@@ -62,13 +68,13 @@
 ### P1 — Core features còn thiếu
 
 - [ ] **`pipe.c` optimization** — hiện vẫn là xv6 gốc, chưa tối ưu gì:
-  - Thay `wakeup()` → `wakeup_one()` (3 chỗ: pipewrite full, pipewrite done, piperead done)
+  - ~~Thay `wakeup()` → `wakeup_one()` (3 chỗ: pipewrite full, pipewrite done, piperead done)~~
   - Thêm `wq_has_sleeper()` fast path trước mỗi `wakeup_one()`
   - Batch `copyin()` ra ngoài lock (từng byte → cả chunk)
 
 ### P2 — Benchmark & stress test
 
-- [ ] **`user/stress_wakeup.c`** — stress test 20+ process cùng sleep/wakeup
+- [x] **`user/stress_wakeup.c`** — stress test 20+ process cùng sleep/wakeup
   - Verify không deadlock, không lost wakeup
 
 ### P3 — Verification & report
@@ -134,4 +140,4 @@ caller's lock (lk)  →  bucket lock  →  p->lock
 
 **`pipe.c` cần wakeup_one, không phải wakeup** — pipe writer/reader là 1-to-1, wake all gây thundering herd không cần thiết.
 
-**Chưa test gì cả** — build có thể pass nhưng chưa chạy `usertests` lần nào trên codebase hiện tại.
+**Đã test:** `./test-xv6.py -q usertests` pass, `bench_ipc` pass, `stress_wakeup` pass.
