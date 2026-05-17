@@ -45,7 +45,7 @@ Sau (optimized):     wakeup(chan) → hash → scan ~4 entries → acquire 1 buc
 | `kernel/waitqueue.h` | **NEW** — struct definitions | ✅ Done |
 | `kernel/waitqueue.c` | **NEW** — hash table + operations | ✅ Done |
 | `kernel/proc.h` | Thêm `wq_entry` vào `struct proc` | ✅ Done |
-| `kernel/proc.c` | Rewrite `sleep()`, `wakeup()` | ✅ Done — `wakeup_one()` chưa có |
+| `kernel/proc.c` | Rewrite `sleep()`, `wakeup()`, `wakeup_one()` | ✅ Done |
 | `kernel/pipe.c` | `wakeup_one()` + fast path; batch copy còn TODO | 🔄 In progress |
 | `kernel/defs.h` | Khai báo API mới | ✅ Done |
 | `kernel/main.c` | Init sequence | ✅ Done |
