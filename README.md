@@ -45,12 +45,12 @@ Sau (optimized):     wakeup(chan) → hash → scan ~4 entries → acquire 1 buc
 | `kernel/waitqueue.h` | **NEW** — struct definitions | ✅ Done |
 | `kernel/waitqueue.c` | **NEW** — hash table + operations | ✅ Done |
 | `kernel/proc.h` | Thêm `wq_entry` vào `struct proc` | ✅ Done |
-| `kernel/proc.c` | Rewrite `sleep()`, `wakeup()` | ✅ Done — `wakeup_one()` chưa có |
-| `kernel/pipe.c` | Fast path + batch copy + `wakeup_one()` | ⏳ TODO |
+| `kernel/proc.c` | Rewrite `sleep()`, `wakeup()`, `wakeup_one()` | ✅ Done |
+| `kernel/pipe.c` | `wakeup_one()` + fast path; batch copy còn TODO | 🔄 In progress |
 | `kernel/defs.h` | Khai báo API mới | ✅ Done |
 | `kernel/main.c` | Init sequence | ✅ Done |
-| `user/bench_ipc.c` | **NEW** — IPC latency benchmark | ⏳ Chưa tạo |
-| `user/stress_wakeup.c` | **NEW** — Stress test 20+ process | ⏳ Chưa tạo |
+| `user/bench_ipc.c` | **NEW** — IPC latency benchmark | ✅ Done |
+| `user/stress_wakeup.c` | **NEW** — Stress test 20+ process | ✅ Done |
 
 > Tiến độ chi tiết, bugs đang open, và quyết định thiết kế: [docs/progress.md](docs/progress.md)
 
@@ -129,12 +129,17 @@ $ stressfs
 ```
 Stress test filesystem concurrency — nhiều process đọc/ghi file đồng thời.
 
-#### Benchmark (TODO — chưa tạo)
+#### Benchmark & stress tests
 
 ```
 $ bench_ipc        # đo IPC latency qua pipe trước/sau optimization
 $ stress_wakeup    # stress 20+ process sleep/wakeup đồng thời
 ```
+
+Đã có kết quả smoke test trong tree hiện tại:
+
+- `bench_ipc`: `5000 rounds: 10 ticks (500 rounds/tick)`
+- `stress_wakeup`: `20 children x 50 rounds` → `OK`
 
 #### Tiện ích
 

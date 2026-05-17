@@ -1,41 +1,4 @@
-# Project: Optimizing the Sleep and Wakeup Mechanism for Better Performance
+Sleep & Wakeup Optimization — xv6-riscv
 
-This repository is a study and implementation project based on **xv6-riscv**.
-The main goal is to analyze and optimize the `sleep`/`wakeup` path in the xv6 kernel
-in order to improve scheduling efficiency and overall runtime performance.
-
-## Project Scope
-
-- Inspect current `sleep` and `wakeup` behavior in xv6.
-- Identify bottlenecks such as unnecessary wakeups, lock contention, or scheduling overhead.
-- Implement and evaluate optimizations.
-- Compare baseline vs optimized behavior using reproducible measurements.
-
-## Base Repository
-
-This codebase is forked from the original MIT xv6 repository:
-
-- https://github.com/mit-pdos/xv6-riscv
-
-## Build and Run
-
-You need:
-
-- RISC-V GNU toolchain (newlib)
-- QEMU with `riscv64-softmmu`
-
-Then run:
-
-```bash
-make qemu
-```
-
-## Attribution and License
-
-This project is a derivative work of the original xv6 project by MIT PDOS.
-
-- Original source: https://github.com/mit-pdos/xv6-riscv
-- Original license: MIT License
-
-The repository keeps the original `LICENSE` file from upstream, and this project
-continues to distribute code under that license.
+Project README for the xv6 filesystem image.
+See README.md for the full documentation.
